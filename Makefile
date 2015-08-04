@@ -9,6 +9,8 @@ MANAGERS=all
 CSRCS = main.c board_init.c
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
 
+CFLAGS_OPTIMIZE_V = -g
+
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 include $(RTEMS_CUSTOM)
 include $(PROJECT_ROOT)/make/leaf.cfg
