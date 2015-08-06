@@ -1,4 +1,5 @@
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -101,16 +102,18 @@ void init_ecap(
         char* handler_info,
         struct eCAP_data* handler_arg)
 {
-    uint16_t util_val; /* used for clarity in register operations */
+    uint32_t util_val; /* used for clarity in register operations */
 
     /* Disable interrupts while we start up the eCAP module */
     rtems_interrupt_level irqlvl;
     rtems_interrupt_disable(irqlvl);
 
     /* Enable the eCAP module in CM_PER_EPWMSS0_CLKCTRL (8.1.12.1.36) */
-    util_val = read16(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
+    util_val = mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
     util_val |= (MODULEMODE_ENABLE << MODULEMODE);
-    write16(CM_PER_MMIO_BASE + cm_per_clk_reg_offset, util_val);
+    mmio_write(CM_PER_MMIO_BASE + cm_per_clk_reg_offset, util_val);
+    util_val = mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
+    printf("CM_PER_EPWMSS0_CLKCTRL:\t0x%08"PRIx32"\n", util_val);
     RTEMS_COMPILER_MEMORY_BARRIER();
 
     /* Configure the eCAP 0 module to 
@@ -122,14 +125,13 @@ void init_ecap(
      */
     ecap_regs->ECEINT = 0x0;
     RTEMS_COMPILER_MEMORY_BARRIER();
-    /*
-    ecap_regs->ECCTL1 = (EC_RISING << CAP1POL)   | (EC_RISING << CAP2POL)
-                      | (EC_RISING << CAP3POL)   | (EC_RISING << CAP4POL)
-                      | (EC_ABS_MODE << CTRRST1) | (EC_ABS_MODE << CTRRST2) 
-                      | (EC_ABS_MODE << CTRRST3) | (EC_ABS_MODE << CTRRST4)
-                      | (EC_ENABLE << CAPLDEN)   | (EC_DIV1 << PRESCALE);
-                      */
-    ecap_regs->ECCTL1 = 0x01aa;
+    /* I probably want EC_ABS_MODE for the CTRRSTn fields */
+    ecap_regs->ECCTL1 = (EC_RISING << CAP1POL)     | (EC_RISING << CAP2POL)
+                      | (EC_RISING << CAP3POL)     | (EC_RISING << CAP4POL)
+                      | (EC_DELTA_MODE << CTRRST1) | (EC_DELTA_MODE << CTRRST2)
+                      | (EC_DELTA_MODE << CTRRST3) | (EC_DELTA_MODE << CTRRST4)
+                      | (EC_ENABLE << CAPLDEN)     | (EC_DIV1 << PRESCALE);
+    /*ecap_regs->ECCTL1 = 0x01aa;*/
     ecap_regs->ECCTL2 = (EC_CONTINUOUS << CONT_ONESHT)
                       | (EC_EVENT4 << STOP_WRAP)
                       | (EC_DISABLE << SYNCI_EN)
@@ -139,12 +141,18 @@ void init_ecap(
     /* Per the docs, clear all the interrupt flags and timer registers, and
      * then enable the interrupts (15.3.4.1.9) */
     ecap_regs->ECCLR  = BIT(CTR_EQ_CMP) | BIT(CTR_EQ_PRD) | BIT(CTROVF) 
-        | BIT(CEVT4) | BIT(CEVT3) | BIT(CEVT2) | BIT(CEVT1) | BIT(INT);
+                      | BIT(CEVT4) | BIT(CEVT3) | BIT(CEVT2) | BIT(CEVT1)
+                      | BIT(INT);
     ecap_regs->ECEINT = BIT(CTROVF) | BIT(CEVT4) | BIT(CEVT3) | BIT(CEVT2) | BIT(CEVT1);
     RTEMS_COMPILER_MEMORY_BARRIER();
 
     /* Enable the eCAP 0 timer (it will start when the clock is enabled */
     ecap_regs->ECCTL2 |= (EC_RUN << TSCTRSTOP);
+    RTEMS_COMPILER_MEMORY_BARRIER();
+
+    /* Set the "smart" idle mode in register SYSCONFIG (15.1.3.2) */
+    util_val = (IDLEMODE_SMART << SYSCONFIG_IDLEMODE);
+    pwmss_regs->SYSCONFIG = util_val;
     RTEMS_COMPILER_MEMORY_BARRIER();
 
     /* Enable the clock in pwmss_ctrl (9.3.1.32) */
@@ -153,17 +161,16 @@ void init_ecap(
     pwmss_regs->CLKCONFIG = util_val;
     RTEMS_COMPILER_MEMORY_BARRIER();
 
-
-    /* Set the "smart" idle mode in register SYSCONFIG (15.1.3.2) */
-    util_val = (IDLEMODE_SMART << SYSCONFIG_IDLEMODE);
-    pwmss_regs->SYSCONFIG = util_val;
-    RTEMS_COMPILER_MEMORY_BARRIER();
-
     util_val = pwmss_regs->CLKSTATUS;
     if ( !(util_val & (1<<eCAP_CLK_EN_ACK)) ) 
     { 
-        printf("Failed to start eCAP counter!\n"); 
+        perror("Failed to start eCAP counter!\n"); 
     }
+
+    util_val = mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKSTCTRL_OFFSET);
+    printf("CM_PER_L4LS_CKLSTCTRL:\t0x%08"PRIx32"\n", util_val);
+    util_val = mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKCTRL_OFFSET);
+    printf("CM_PER_L4LS_CLKCTRL:\t0x%08"PRIx32"\n", util_val);
 
     /* Install our eCAP interrupt handler */
     rtems_status_code have_isr = rtems_interrupt_handler_install(
