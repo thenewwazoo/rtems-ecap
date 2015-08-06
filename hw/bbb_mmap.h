@@ -4,8 +4,18 @@
 #define CONTROL_CONF_SLOWSLEW          0x00000040
 #define CONTROL_CONF_MUXMODE(n)        (n)
 
+/* Need to find the control register offset to mux a pin?
+ *  1) Look at the BBB SRM and find the P8 or P9 pin you want to drive
+ *  2) Get the processor pin number from the PROC column
+ *  3) Look in the AM335x datasheet Table 4-1 and find your pin in the
+ *      "ZCZ ball number" column
+ *  4) Note the pin name
+ *  5) Look in the AM335x TRM Table 9-10 for your pin name (in lowercase)
+ */
+
 #define SOC_CONTROL_REGS                        (0x44E10000)
 #define CONTROL_IOPAD_OFFSET                    (0x800)
+#define CONTROL_CONF_GPMC_A1_OFFSET             (0x844)
 #define CONTROL_CONF_ECAP0_IN_PWM0_OUT_OFFSET   (0x964)
 #define CONTROL_CONF_PWMSS_CTRL                 (0x664)
 #define CONTROL_CONF_ECAP_EVT_CAP               (0xFD4)
@@ -30,12 +40,27 @@
 #define ECAP0_REGS_OFFSET   (0x100) /* offset from PWMSS_MMIO_BASE */
 #define ECAP0_REGS_END      (0x4830017F)
 
-/* Clock control stuff */
+/* L4_WKUP peripheral stuff */
+#define L4_WKUP_MMIO_BASE   (0x44C00000)
+
+/* CM_WKUP (clock module wakeup) stuff */
+#define CM_WKUP_MMIO_BASE               (0x44E00400)
+#define CM_WKUP_GPIO0_CLKCTRL_OFFSET    (0x08)
+
+/* CM PER stuff */
 #define CM_PER_MMIO_BASE                (0x44E00000)
-#define CM_PER_MMIO_END                 (0x44E03FFF)
 #define CM_PER_EPWMSS0_CLKCTRL_OFFSET   (0xD4)
 #define CM_PER_L4LS_CLKSTCTRL_OFFSET    (0x00)
 #define CM_PER_L4LS_CLKCTRL_OFFSET      (0x60)
+#define CM_PER_GPIO1_CLKCTRL_OFFSET     (0xAC)
+#define CM_PER_GPIO2_CLKCTRL_OFFSET     (0xB0)
+#define CM_PER_GPIO3_CLKCTRL_OFFSET     (0xB4)
+
+/* GPIO stuff */
+#define GPIO0_MMIO_BASE     (0x44E07000)
+#define GPIO1_MMIO_BASE     (0x4804C000)
+#define GPIO2_MMIO_BASE     (0x481AC000)
+#define GPIO3_MMIO_BASE     (0x481AE000)
 
 #define IDLEST      16
 #define MODULEMODE  0
@@ -47,3 +72,7 @@
 
 #define MODULEMODE_DISABLED 0
 #define MODULEMODE_ENABLE   2
+
+#define OPTFCLKEN_GPIOn_GDBCLK     18
+#define FLCK_DIS                    0
+#define FCLK_EN                     1

@@ -96,7 +96,7 @@ struct eCAP_regs {
 // CONT/ONESHOT bit
 #define    EC_CONTINUOUS          0x0
 #define    EC_ONESHOT             0x1
-// STOPVALUE bit
+// STOP_WRAP bit
 #define    EC_EVENT1              0x0
 #define    EC_EVENT2              0x1
 #define    EC_EVENT3              0x2
