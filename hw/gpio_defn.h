@@ -9,9 +9,9 @@ typedef uint8_t gpio_pin;
 /* Yeah, I know the GPIO_ is redundant, but it matches the TRM */
 struct GPIO_regs {
     volatile uint32_t GPIO_REVISION;
-    volatile uint16_t RSVD0[0x6];
+    volatile uint16_t RSVD0[6];
     volatile uint32_t GPIO_SYSCONFIG;
-    volatile uint16_t RSVD1[0xA];
+    volatile uint16_t RSVD1[6];
     volatile uint32_t GPIO_EOI;
     volatile uint32_t GPIO_IRQSTATUS_RAW_0;
     volatile uint32_t GPIO_IRQSTATUS_RAW_1;
@@ -23,9 +23,9 @@ struct GPIO_regs {
     volatile uint32_t GPIO_IRQSTATUS_CLR_1;
     volatile uint32_t GPIO_IRQWAKEN_0;
     volatile uint32_t GPIO_IRQWAKEN_1;
-    volatile uint16_t RSVD2[0x68];
+    volatile uint16_t RSVD2[100];
     volatile uint32_t GPIO_SYSSTATUS;
-    volatile uint16_t RSVD3[0x10];
+    volatile uint16_t RSVD3[12];
     volatile uint32_t GPIO_CTRL;
     volatile uint32_t GPIO_OE;
     volatile uint32_t GPIO_DATAIN;
@@ -34,10 +34,9 @@ struct GPIO_regs {
     volatile uint32_t GPIO_LEVELDETECT1;
     volatile uint32_t GPIO_RISINGDETECT;
     volatile uint32_t GPIO_FALLINGDETECT;
-    volatile uint16_t RSVD4[0x1C];
     volatile uint32_t GPIO_DEBOUNCEENABLE;
     volatile uint32_t GPIO_DEBOUNCINGTIME;
-    volatile uint16_t RSVD5[0x1C];
+    volatile uint16_t RSVD4[28];
     volatile uint32_t GPIO_CLEARDATAOUT;
     volatile uint32_t GPIO_SETDATAOUT;
 };

@@ -2,7 +2,7 @@
 
 #define ECAP0_INT   31
 
-// TI ECAP register offset defines
+/* TI ECAP register offset defines */
 struct eCAP_regs { 
     volatile uint32_t TSCTR; 
     volatile uint32_t CTRPHS; 
@@ -21,11 +21,13 @@ struct eCAP_regs {
     volatile uint32_t REVID; 
 };
 
-// TI ECAP field defines
-//  defined in terms of bit shifts
+/********************************************
+ TI ECAP field defines
+  defined in terms of bit shifts
+ ********************************************/                                     
 
-// Capture control register 1 bit definitions */                                     
-// ECCTL1
+/* Capture control register 1 bit definitions */
+/* ECCTL1 */
 #define	 CAP1POL      0    //  Capture Event 1 Polarity select 
 #define	 CTRRST1      1    //  Counter Reset on Capture Event 1 
 #define	 CAP2POL      2    //  Capture Event 2 Polarity select 
@@ -38,17 +40,17 @@ struct eCAP_regs {
 #define	 PRESCALE     9    //  Event Filter prescale select 
 #define	 FREE_SOFT   14    //  Emulation mode 
 
-// Capture control register 2 bit definitions */                                     
+// Capture control register 2 bit definitions
 // ECCTL2
-#define  CONT_ONESHT 0  // Continuous or one-shot 
-#define  STOP_WRAP   1  // Stop value for one-shot, Wrap for continuous 
-#define  REARM       3  // One-shot re-arm 
-#define  TSCTRSTOP   4  // TSCNT counter stop 
-#define  SYNCI_EN    5  // Counter sync-in select 
-#define  SYNCO_SEL   6  // Sync-out mode 
-#define  SWSYNC      8  // SW forced counter sync 
-#define  CAP_APWM    9  // CAP/APWM operating mode select 
-#define  APWMPOL     10 // APWM output polarity select 
+#define  CONT_ONESHT 0  // Continuous or one-shot
+#define  STOP_WRAP   1  // Stop value for one-shot, Wrap for continuous
+#define  REARM       3  // One-shot re-arm
+#define  TSCTRSTOP   4  // TSCNT counter stop
+#define  SYNCI_EN    5  // Counter sync-in select
+#define  SYNCO_SEL   6  // Sync-out mode
+#define  SWSYNC      8  // SW forced counter sync
+#define  CAP_APWM    9  // CAP/APWM operating mode select
+#define  APWMPOL     10 // APWM output polarity select
 
 // ECAP interrupt enable register bit definitions
 // ECEINT
