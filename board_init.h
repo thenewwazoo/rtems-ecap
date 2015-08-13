@@ -34,8 +34,9 @@ void gpio_setdirection(
 void gpio_out(gpio_module module, gpio_pin pin, bool value);
 void gpio_print_debug(gpio_module module);
 
-void init_ecap0(
-        rtems_interrupt_handler handler, 
+void init_ecap(
+        uint8_t ecap_module_num,
+        rtems_interrupt_handler handler,
         struct eCAP_data* arg);
 
 /* Simply loop until the bit reads as set */

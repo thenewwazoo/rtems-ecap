@@ -78,9 +78,6 @@ void start_tasks()
     /***********************/
     /* ECAP0 consumer task */
 
-    /* Set up some data used by the ecap0 task and interrupt handler */
-    ecap0_data.ecap_regs = (struct eCAP_regs*)ECAP0_REGS_BASE;
-    ecap0_data.num_intr = 0;
 
     ecap0_sem_name = rtems_build_name('E', 'C', '0', 'S');
     ret = rtems_semaphore_create(
@@ -93,7 +90,7 @@ void start_tasks()
     ecap0_data.intr_sem_name = ecap0_sem_name;
 
     /* start the ecap0 module and register the interrupt handler */
-    init_ecap0(ecap_handler, &ecap0_data);
+    init_ecap(0, ecap_handler, &ecap0_data);
 
     ret = rtems_task_start( ecap_task_id, ecap_task, (rtems_task_argument)&ecap0_data);
     assert(ret == RTEMS_SUCCESSFUL);

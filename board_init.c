@@ -20,12 +20,6 @@
  * forward declarations 
  */
 
-void init_ecap(
-        uint32_t cm_per_clk_reg_offset,
-        struct PWMSS_regs* pwmss_regs,
-        struct eCAP_regs* ecap_regs
-        );
-
 void mux_pin(
         uint32_t soc_control_conf_reg_offset,
         uint8_t mux_mode);
@@ -35,66 +29,62 @@ void init_gpio_per(
         struct GPIO_regs* gpio_regs
         );
 
-/* init_ecap0
- * Initialize the first eCAP module. This module will trigger on
+/* init_ecap
+ * Initialize an eCAP module. This module will trigger on
  *  every rising edge, and will store four captures.
  *
  */
-void init_ecap0(
+void init_ecap(
+        uint8_t ecap_module_num,
         rtems_interrupt_handler handler,
         struct eCAP_data* arg)
 {
+
+    uint32_t cm_per_clk_reg_offset;
+    uint8_t  ecap_intr_num;
+    char     ecap_intr_name[6];
+    uint8_t  ecap_pin_mux_mode;
+    uint32_t ecap_pin_reg_offset;
+    struct eCAP_regs*  ecap_regs;
+    struct PWMSS_regs* pwmss_regs;
+    uint8_t  pwmss_tbclken_shift;
+
+    uint32_t util_val; /* used for clarity in register operations */
+
+    switch (ecap_module_num)
+    {
+        case (0):
+            cm_per_clk_reg_offset = CM_PER_EPWMSS0_CLKCTRL_OFFSET;
+            ecap_intr_num = ECAP0_INT;
+            strncpy(ecap_intr_name, "eCAP0", 6);
+            ecap_pin_mux_mode   = CONTROL_CONF_MUXMODE(0);
+            ecap_pin_reg_offset = CONTROL_CONF_ECAP0_IN_PWM0_OUT_OFFSET;
+            ecap_regs  = (struct eCAP_regs*)ECAP0_REGS_BASE;
+            pwmss_regs = (struct PWMSS_regs*)PWMSS0_MMIO_BASE;
+            pwmss_tbclken_shift = PWMSS0_TBCLKEN;
+            break;
+        default:
+            return;
+    }
+
+    /* Set up some generic data used by the ecap task and interrupt handler */
+    arg->num_intr  = 0;
+    arg->ecap_regs = ecap_regs;
 
     /* Disable interrupts while we start up the eCAP module */
     rtems_interrupt_level irqlvl;
     rtems_interrupt_disable(irqlvl);
 
     mmio_write(SOC_CONTROL_REGS + CONTROL_CONF_PWMSS_CTRL,
-            (TBCLKEN_ENABLE << PWMSS0_TBCLKEN));
-
-    init_ecap( 
-            CM_PER_EPWMSS0_CLKCTRL_OFFSET,
-            (struct PWMSS_regs*)PWMSS0_MMIO_BASE,
-            (struct eCAP_regs*)ECAP0_REGS_BASE
-            );
-
-    /* Install our eCAP interrupt handler */
-    rtems_status_code have_isr = rtems_interrupt_handler_install(
-            ECAP0_INT,
-            "eCAP0",
-            RTEMS_INTERRUPT_UNIQUE,
-            handler,
-            (void*)arg);
-
-    if (have_isr != RTEMS_SUCCESSFUL) { printf("Failed to install eCAP0 ISR!\n"); }
-
-    /* Re-enable interrupts, preserving cpsr */
-    rtems_interrupt_enable(irqlvl);
-
-    /* Mux the ECAP0_IN_APWM_OUT pin by setting the RXACTIVE bit and mode 0 
-     * in register conf_ecap0_in_pwm0_out (9.3.1.51) to enable external eCAP
-     * triggering
-     */
-    mux_pin(CONTROL_CONF_ECAP0_IN_PWM0_OUT_OFFSET, 0);
-
-    printf("ecap0 initialized\n");
-}
-
-void init_ecap(
-        uint32_t cm_per_clk_reg_offset,
-        struct PWMSS_regs* pwmss_regs,
-        struct eCAP_regs* ecap_regs)
-{
-    uint32_t util_val; /* used for clarity in register operations */
+            (TBCLKEN_ENABLE << pwmss_tbclken_shift));
 
     /* Enable the eCAP module in CM_PER_EPWMSS0_CLKCTRL (8.1.12.1.36) */
     util_val = mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
     util_val |= (MODULEMODE_ENABLE << MODULEMODE);
     mmio_write(CM_PER_MMIO_BASE + cm_per_clk_reg_offset, util_val);
-    util_val = mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
     RTEMS_COMPILER_MEMORY_BARRIER();
 
-    /* Configure the eCAP 0 module to 
+    /* Configure the eCAP module to 
      *   trigger on rising pulses with no timer prescale
      *   interrupt when the timer wraps
      *   run in capture mode
@@ -144,7 +134,23 @@ void init_ecap(
         perror("Failed to start eCAP counter!\n"); 
     }
 
+    rtems_status_code have_isr = rtems_interrupt_handler_install(
+            ecap_intr_num,
+            ecap_intr_name,
+            RTEMS_INTERRUPT_UNIQUE,
+            handler,
+            (void*)arg);
 
+    if (have_isr != RTEMS_SUCCESSFUL) { printf("Failed to install eCAP0 ISR!\n"); }
+
+    /* Re-enable interrupts, preserving cpsr */
+    rtems_interrupt_enable(irqlvl);
+
+    /* Mux the ecap pin by setting the RXACTIVE bit and mode  
+     * in pin register (9.3.1.51) to enable external eCAP
+     * triggering
+     */
+    mux_pin(ecap_pin_reg_offset, ecap_pin_mux_mode);
 
 }
 
