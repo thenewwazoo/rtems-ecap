@@ -55,7 +55,7 @@ struct GPIO_regs {
 #define GATINGRATIO     1
 
 /* GPIO_DEBOUNCINGTIME */
-#define DEBOUNCETIME    0
+#define DEBOUNCINGTIME    0
 
 /* GPIO_SYSCONFIG *
  *  field bits    *
@@ -94,7 +94,7 @@ struct GPIO_regs {
 #define GATINGRATIO_DIV4        2
 #define GATINGRATIO_DIV8        3
 
-/* GPIO_DEBOUNCETIME *
+/* GPIO_DEBOUNCINGTIME *
  *  field bits       *
  *********************/
 /* DEBOUNCETIME: Input debouncing value in 31 usec steps */
