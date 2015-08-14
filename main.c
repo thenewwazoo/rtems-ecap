@@ -14,13 +14,14 @@
 #include "debug.h"
 
 
-/* things that will do things later */
+/* forward declarations for tasks */
 rtems_task ecap_task(rtems_task_argument arg);
-rtems_task ecap_generator(rtems_task_argument arg);
-rtems_task strober(rtems_task_argument arg);
+
+/* forward declarations for interrupt handlers */
 static void ecap_handler(void* arg);
 
-/* things that do things */
+/* function definitions */
+
 void start_tasks()
 {
 
@@ -30,12 +31,6 @@ void start_tasks()
     struct eCAP_data ecap0_data;
     rtems_id ecap0_sem;
     rtems_name ecap0_sem_name;
-
-    rtems_id   ecap_gen_task_id;
-    rtems_name ecap_gen_task_name;
-
-    rtems_id   strober_task_id;
-    rtems_name strober_task_name;
 
     rtems_status_code ret;
 
@@ -51,33 +46,10 @@ void start_tasks()
             );
     assert(ret == RTEMS_SUCCESSFUL);
 
-    ecap_gen_task_name = rtems_build_name('E', 'C', '0', 'G');
-    ret = rtems_task_create(
-            ecap_gen_task_name,
-            1,
-            RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES,
-            &ecap_gen_task_id
-            );
-    assert(ret == RTEMS_SUCCESSFUL);
-
-    strober_task_name = rtems_build_name('S', 'T', 'R', 'B');
-    ret = rtems_task_create(
-            strober_task_name,
-            1,
-            RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES,
-            &strober_task_id
-            );
-    assert(ret == RTEMS_SUCCESSFUL);
-
     /* start the tasks we've created */
 
     /***********************/
     /* ECAP0 consumer task */
-
 
     ecap0_sem_name = rtems_build_name('E', 'C', '0', 'S');
     ret = rtems_semaphore_create(
@@ -95,32 +67,7 @@ void start_tasks()
     ret = rtems_task_start( ecap_task_id, ecap_task, (rtems_task_argument)&ecap0_data);
     assert(ret == RTEMS_SUCCESSFUL);
 
-    /*****************************************/
-    /* ECAP0 forced-interrupt generator task */
-    
-    /* Let's just borrow ecap0_data.ecap_regs for the arg to ecap_generator */
-    /*
-    ret = rtems_task_start(
-            ecap_gen_task_id,
-            ecap_generator,
-            (rtems_task_argument)ecap0_data.ecap_regs);
-    assert(ret == RTEMS_SUCCESSFUL);
-    */
-
-    /***************************/
-    /* ECAP0 pin strobing task */
-
-    /* Configure gpio1_17, which lives on control_conf_gpmc_a1 */
-    /*gpio_pin_setup(CONTROL_CONF_GPMC_A1_OFFSET);*/
-    mux_pin(CONTROL_CONF_GPMC_A1_OFFSET, CONTROL_CONF_MUXMODE(7));
-
-    /* set gpio1_17 to be an output */
-    gpio_setdirection(1, 17, false);
-
-    ret = rtems_task_start( strober_task_id, strober, (rtems_task_argument)NULL);
-    assert(ret == RTEMS_SUCCESSFUL);
-
-    /* delete the startup task now the we're running */
+    /* delete the startup task now that we're running */
     ret = rtems_task_delete(RTEMS_SELF);
     assert(ret == RTEMS_SUCCESSFUL);
 
@@ -161,9 +108,7 @@ rtems_task ecap_task(rtems_task_argument arg)
 
     while (1)
     {
-        printf("nom");
         ret = rtems_semaphore_obtain(ecap_sem, RTEMS_DEFAULT_OPTIONS, 0);
-        printf(".\n");
 
         printf(" ecap0_data->int_flags:\t0x%08x\n", ecap_data->int_flags);
         printf(" that was interrupt number %lu\n", ecap_data->num_intr);
@@ -173,42 +118,6 @@ rtems_task ecap_task(rtems_task_argument arg)
     }
 
 }
-
-rtems_task strober(rtems_task_argument arg)
-{
-    rtems_status_code ret;
-
-    printf("Strober bout ta strobe every 2 seconds\n");
-    while (1)
-    {
-        ret = rtems_task_wake_after(rtems_clock_get_ticks_per_second() * 2);
-        if (!rtems_is_status_successful(ret)) { printf("strober failed to sleep!\n"); }
-        printf("stro");
-        gpio_out((gpio_module)1, (gpio_pin)17, true);
-        ret = rtems_task_wake_after(rtems_clock_get_ticks_per_second() / 10);
-        if (!rtems_is_status_successful(ret)) { printf("Failed to keep high!\n"); }
-        gpio_print_debug((gpio_module)1);
-        gpio_out((gpio_module)1, (gpio_pin)17, false);
-        printf("b!\n");
-    }
-}
-
-rtems_task ecap_generator(rtems_task_argument arg)
-{
-    struct eCAP_regs* ecap_regs = (struct eCAP_regs*)arg;
-    rtems_status_code ret;
-
-    printf("Interruptor beginning; interrupts every 3 seconds\n");
-    while (1) {
-        ret = rtems_task_wake_after(rtems_clock_get_ticks_per_second() * 3);
-        if (!rtems_is_status_successful(ret)) { printf("gen failed to sleep!\n"); }
-        printf("moo");
-        ecap_regs->ECFRC = (EC_FORCE << CEVT1);
-        RTEMS_COMPILER_MEMORY_BARRIER();
-        printf("!\n");
-    }
-}
-
 
 /* interrupt handlers */
 
@@ -221,9 +130,7 @@ static void ecap_handler(void* arg)
     ecap_data->int_flags = ecap_data->ecap_regs->ECFLG;
     ecap_data->num_intr++;
     ecap_data->ecap_regs->ECCLR = 0xFF;
-    printk("fly");
     rtems_semaphore_release(ecap_sem);
-    printk("?\n");
 
 }
 
