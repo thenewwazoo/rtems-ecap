@@ -6,10 +6,10 @@ PGM=${ARCH}/beaglebone.exe
 MANAGERS=all
 
 # C source names
-CSRCS = main.c board_init.c debug.c
+CSRCS = main.c debug.c ecap.c gpio.c system_clocks.c
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
 
-CFLAGS_OPTIMIZE_V = -g
+CFLAGS_OPTIMIZE_V = -g -O3
 
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 include $(RTEMS_CUSTOM)

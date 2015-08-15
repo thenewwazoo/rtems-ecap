@@ -9,7 +9,8 @@
 
 #include "hw/ecap_defn.h"
 #include "hw/gpio_defn.h"
-#include "board_init.h"
+
+#include "ecap.h"
 
 void print_ecap(struct eCAP_data* ecap_data)
 {
