@@ -8,6 +8,7 @@
 #include "hw/gpio_defn.h"
 
 #include "bit_manip.h"
+#include "ecap.h"
 #include "gpio.h"
 
 #include "debug.h"

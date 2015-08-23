@@ -6,7 +6,13 @@ PGM=${ARCH}/beaglebone.exe
 MANAGERS=all
 
 # C source names
-CSRCS = main.c debug.c ecap.c gpio.c system_clocks.c
+CSRCS = main.c \
+	debug.c \
+	ecap.c \
+	gpio.c \
+	system_clocks.c \
+	locator.c \
+	stimulator.c
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
 
 CFLAGS_OPTIMIZE_V = -g -O3

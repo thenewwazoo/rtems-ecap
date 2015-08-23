@@ -14,6 +14,7 @@
 #include "hw/pwmss_defn.h"
 
 #include "ecap.h"
+#include "events.h"
 #include "gpio.h"
 
 #include "debug.h"
@@ -28,7 +29,6 @@
  *
  */
 void init_ecap(
-        uint8_t ecap_module_num,
         rtems_interrupt_handler handler,
         struct eCAP_data* arg)
 {
@@ -41,10 +41,11 @@ void init_ecap(
     struct eCAP_regs*  ecap_regs;
     struct PWMSS_regs* pwmss_regs;
     uint8_t  pwmss_tbclken_shift;
+    rtems_event_set ecap_event_id;
 
     uint32_t util_val; /* used for clarity in register operations */
 
-    switch (ecap_module_num)
+    switch (arg->ecap_module)
     {
         case (0):
             cm_per_clk_reg_offset = CM_PER_EPWMSS0_CLKCTRL_OFFSET;
@@ -55,6 +56,7 @@ void init_ecap(
             ecap_regs  = (struct eCAP_regs*)ECAP0_REGS_BASE;
             pwmss_regs = (struct PWMSS_regs*)PWMSS0_MMIO_BASE;
             pwmss_tbclken_shift = PWMSS0_TBCLKEN;
+            ecap_event_id = ECAP_0_EVENT;
             break;
         default:
             return;
@@ -63,6 +65,7 @@ void init_ecap(
     /* Set up some generic data used by the ecap task and interrupt handler */
     arg->num_intr  = 0;
     arg->ecap_regs = ecap_regs;
+    arg->ecap_event_id = ecap_event_id;
 
     /* Disable interrupts while we start up the eCAP module */
     rtems_interrupt_level irqlvl;

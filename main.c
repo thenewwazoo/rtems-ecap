@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <bsp.h>
 #include <inttypes.h>
+#include <rtems/cpuuse.h>
 #include <rtems/stackchk.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,55 +13,69 @@
 
 #include "ecap.h"
 #include "gpio.h"
+#include "locator.h"
 #include "system_clocks.h"
+#include "stimulator.h"
 
 #include "debug.h"
 
-/* forward declarations for tasks */
-rtems_task ecap_task(rtems_task_argument arg);
-rtems_task strober(rtems_task_argument arg);
-
-/* forward declarations for interrupt handlers */
-static void ecap_handler(void* arg);
-
-/* function definitions */
+rtems_task display(rtems_task_argument arg);
 
 void start_tasks()
 {
 
     /* things in which to put other things */
-    rtems_id   ecap_task_id;
-    rtems_name ecap_task_name;
-    struct eCAP_data ecap0_data;
-    rtems_id ecap0_sem;
-    rtems_name ecap0_sem_name;
+    rtems_id locator_task_id;
+    struct eCAP_data* ecap0_data = (struct eCAP_data*)malloc(sizeof(struct eCAP_data));
+    struct locator_spec l1_spec = { 
+        .locator_id = '1', 
+        .ecap_module = 0,
+        .ecap_data = ecap0_data,
+        .timeval = 0
+    };
 
-    rtems_id   strober_task_id;
-    rtems_name strober_task_name;
+    rtems_id strober_task_id;
+    uint8_t map[] = { 1, 1, 2 };
+    struct stim_spec stim_data = {
+        .module = (gpio_module)1,
+        .pin = (gpio_pin)17,
+        .interval = rtems_clock_get_ticks_per_second() / 60,
+        .num_teeth = 1,
+        .map = map
+    };
+
+    rtems_id display_task_id;
 
     rtems_status_code ret;
 
     /* create the tasks we'll later start */
-    ecap_task_name = rtems_build_name('C', 'A', 'P', '0');
     ret = rtems_task_create(
-            ecap_task_name,
+            rtems_build_name('C', 'A', 'P', '0'),
             1,
             RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES,
-            &ecap_task_id
+            &locator_task_id
             );
     assert(ret == RTEMS_SUCCESSFUL);
 
-    strober_task_name = rtems_build_name('S', 'T', 'R', 'B');
     ret = rtems_task_create(
-            strober_task_name,
-            1,
+            rtems_build_name('S', 'T', 'R', 'B'),
+            2,
             RTEMS_MINIMUM_STACK_SIZE,
             RTEMS_DEFAULT_MODES,
             RTEMS_DEFAULT_ATTRIBUTES,
             &strober_task_id
             );
+    assert(ret == RTEMS_SUCCESSFUL);
+
+    ret = rtems_task_create(
+            rtems_build_name('D', 'I', 'S', 'P'),
+            3,
+            RTEMS_MINIMUM_STACK_SIZE,
+            RTEMS_DEFAULT_MODES,
+            RTEMS_DEFAULT_ATTRIBUTES,
+            &display_task_id);
     assert(ret == RTEMS_SUCCESSFUL);
 
     /* start the tasks we've created */
@@ -69,20 +84,10 @@ void start_tasks()
     /* ECAP0 consumer task */
     /***********************/
 
-    ecap0_sem_name = rtems_build_name('S', 'E', 'M', '0');
-    ret = rtems_semaphore_create(
-            ecap0_sem_name,
-            0,
-            RTEMS_DEFAULT_ATTRIBUTES,
-            1,
-            &ecap0_sem);
-    assert(ret == RTEMS_SUCCESSFUL);
-    ecap0_data.intr_sem_id = &ecap0_sem;
-
-    /* start the ecap0 module and register the interrupt handler */
-    init_ecap(0, ecap_handler, &ecap0_data);
-
-    ret = rtems_task_start( ecap_task_id, ecap_task, (rtems_task_argument)&ecap0_data);
+    ret = rtems_task_start(
+            locator_task_id,
+            locator_task,
+            (rtems_task_argument)&l1_spec);
     assert(ret == RTEMS_SUCCESSFUL);
 
     /***************************/
@@ -93,10 +98,25 @@ void start_tasks()
     mux_pin(CONTROL_CONF_GPMC_A1_OFFSET, CONTROL_CONF_MUXMODE(7));
 
     /* set gpio1_17 to be an output */
-    gpio_setdirection(1, 17, false);
+    gpio_setdirection(stim_data.module, stim_data.pin, false);
 
-    ret = rtems_task_start( strober_task_id, strober, (rtems_task_argument)NULL);
+    ret = rtems_task_start(
+            strober_task_id,
+            stimulator,
+            (rtems_task_argument)&stim_data);
     assert(ret == RTEMS_SUCCESSFUL);
+
+    /****************/
+    /* Display task */
+    /****************/
+
+    ret = rtems_task_start(
+            display_task_id,
+            display,
+            (rtems_task_argument)&l1_spec);
+    assert(ret == RTEMS_SUCCESSFUL);
+
+    /* done starting tasks, now time to leave */
 
     /* delete the init task now that we're running */
     ret = rtems_task_delete(RTEMS_SELF);
@@ -117,74 +137,38 @@ rtems_task Init(rtems_task_argument arg)
     exit( 0 ); /* We never get here, since we delete the init task */
 }
 
-
-/* task definitions */
-
-rtems_task ecap_task(rtems_task_argument arg)
+rtems_task display(rtems_task_argument arg)
 {
-    struct eCAP_data* ecap_data = (struct eCAP_data*)arg;
-    rtems_status_code ret;
+    struct locator_spec* loc_spec = (struct locator_spec*)arg;
+    struct eCAP_data* ecap_data = loc_spec->ecap_data;
+    uint32_t num_intr = 0;
+    uint32_t intr_delta;
+    uint32_t time_value = 0;
+    uint32_t time_delta;
+    uint32_t calc_tps;
 
+    printf("display starting...\n");
     while (1)
     {
-        ret = rtems_semaphore_obtain(*(ecap_data->intr_sem_id), RTEMS_DEFAULT_OPTIONS, 0);
-        assert(ret == RTEMS_SUCCESSFUL);
-        uint32_t timer = ecap_data->ecap_regs->TSCTR;
-        uint32_t delay;
-        switch ((ecap_data->int_flags >> 1) & 15)
-        {
-            case 1:
-                delay = timer - ecap_data->ecap_regs->CAP1;
-                break;
-            case 2:
-                delay = timer - ecap_data->ecap_regs->CAP2;
-                break;
-            case 4:
-                delay = timer - ecap_data->ecap_regs->CAP3;
-                break;
-            case 8:
-                delay = timer - ecap_data->ecap_regs->CAP4;
-                break;
-            default:
-                continue;
-        }
-        printf("\rflags:\t0x%08x\tnum: %lu\tdelay: 0x%08"PRIx32"\n", 
-                ecap_data->int_flags, 
-                ecap_data->num_intr, 
-                delay);
-    }
+        /* sleep */
+        rtems_task_wake_after(rtems_clock_get_ticks_per_second());
+        intr_delta = ecap_data->num_intr - num_intr;
+        num_intr = ecap_data->num_intr;
+        time_delta = loc_spec->timeval - time_value;
+        time_value = loc_spec->timeval;
+        calc_tps = 100000000lu / (time_delta / intr_delta);
 
-}
-
-rtems_task strober(rtems_task_argument arg)
-{
-    rtems_status_code ret;
-
-    printf("Pin strobe task starting on gpio1_17.\n");
-    while (1)
-    {
-        ret = rtems_task_wake_after(rtems_clock_get_ticks_per_second() * 1);
-        if (!rtems_is_status_successful(ret)) { printf("strober failed to sleep!\n"); }
-        gpio_out((gpio_module)1, (gpio_pin)17, true);
-        ret = rtems_task_wake_after(rtems_clock_get_ticks_per_second() / 10);
-        if (!rtems_is_status_successful(ret)) { printf("Failed to keep high!\n"); }
-        gpio_out((gpio_module)1, (gpio_pin)17, false);
+        /* print stuff */
+        printf("\033[2J");
+        printf("intr_delta: %"PRIu32", calc_tps: %"PRIu32"\n", intr_delta, calc_tps);
+        printf("num_intr: %"PRIu32", ecap_data->num_intr: %"PRIu32"\n", num_intr, ecap_data->num_intr);
+        printf("timeval: %08"PRIx32", time_delta: %"PRIu32"\n", loc_spec->timeval, time_delta);
+        rtems_cpu_usage_report();
+        rtems_stack_checker_report_usage();
     }
 }
 
-/* interrupt handlers */
-
-static void ecap_handler(void* arg)
-{
-    struct eCAP_data* ecap_data = (struct eCAP_data*)arg;
-
-    ecap_data->int_flags = ecap_data->ecap_regs->ECFLG;
-    ecap_data->num_intr++;
-    ecap_data->ecap_regs->ECCLR = 0xFF;
-    rtems_semaphore_release(*(ecap_data->intr_sem_id));
-
-}
-
+#define CONFIGURE_MICROSECONDS_PER_TICK 1000
 #define CONFIGURE_STACK_CHECKER_ENABLED
 
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
