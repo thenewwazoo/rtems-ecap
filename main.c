@@ -27,22 +27,11 @@ void start_tasks()
     /* things in which to put other things */
     rtems_id locator_task_id;
     struct eCAP_data* ecap0_data = (struct eCAP_data*)malloc(sizeof(struct eCAP_data));
-    struct locator_spec l1_spec = { 
-        .locator_id = '1', 
-        .ecap_module = 0,
-        .ecap_data = ecap0_data,
-        .timeval = 0
-    };
+    struct locator_spec* l1_spec = (struct locator_spec*)malloc(sizeof(struct locator_spec));
 
     rtems_id strober_task_id;
     uint8_t map[] = { 1, 1, 2 };
-    struct stim_spec stim_data = {
-        .module = (gpio_module)1,
-        .pin = (gpio_pin)17,
-        .interval = rtems_clock_get_ticks_per_second() / 60,
-        .num_teeth = 1,
-        .map = map
-    };
+    struct stim_spec* stim_data = (struct stim_spec*)malloc(sizeof(struct stim_spec));
 
     rtems_id display_task_id;
 
@@ -84,26 +73,37 @@ void start_tasks()
     /* ECAP0 consumer task */
     /***********************/
 
+    l1_spec->locator_id = '1';
+    l1_spec->ecap_module = 0;
+    l1_spec->ecap_data = ecap0_data;
+    l1_spec->timeval = 0;
+
     ret = rtems_task_start(
             locator_task_id,
             locator_task,
-            (rtems_task_argument)&l1_spec);
+            (rtems_task_argument)l1_spec);
     assert(ret == RTEMS_SUCCESSFUL);
 
     /***************************/
     /* ECAP0 pin strobing task */
     /***************************/
 
+    stim_data->module = (gpio_module)1;
+    stim_data->pin = (gpio_pin)17;
+    stim_data->interval = rtems_clock_get_ticks_per_second() / 60;
+    stim_data->num_teeth = 1;
+    stim_data->map = map;
+
     /* Configure gpio1_17, which lives on control_conf_gpmc_a1 */
     mux_pin(CONTROL_CONF_GPMC_A1_OFFSET, CONTROL_CONF_MUXMODE(7));
 
     /* set gpio1_17 to be an output */
-    gpio_setdirection(stim_data.module, stim_data.pin, false);
+    gpio_setdirection(stim_data->module, stim_data->pin, false);
 
     ret = rtems_task_start(
             strober_task_id,
             stimulator,
-            (rtems_task_argument)&stim_data);
+            (rtems_task_argument)stim_data);
     assert(ret == RTEMS_SUCCESSFUL);
 
     /****************/
