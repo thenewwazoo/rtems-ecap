@@ -113,7 +113,7 @@ void start_tasks()
     ret = rtems_task_start(
             display_task_id,
             display,
-            (rtems_task_argument)&l1_spec);
+            (rtems_task_argument)l1_spec);
     assert(ret == RTEMS_SUCCESSFUL);
 
     /* done starting tasks, now time to leave */
