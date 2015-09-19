@@ -73,10 +73,8 @@ void start_tasks()
     /* ECAP0 consumer task */
     /***********************/
 
-    l1_spec->locator_id = '1';
     l1_spec->ecap_module = 0;
     l1_spec->ecap_data = ecap0_data;
-    l1_spec->timeval = 0;
 
     ret = rtems_task_start(
             locator_task_id,
@@ -87,6 +85,8 @@ void start_tasks()
     /***************************/
     /* ECAP0 pin strobing task */
     /***************************/
+
+    gpio_init();
 
     stim_data->module = (gpio_module)1;
     stim_data->pin = (gpio_pin)17;
@@ -130,8 +130,6 @@ rtems_task Init(rtems_task_argument arg)
     clocks_init_L3();
     clocks_init_L4();
 
-    gpio_init();
-
     start_tasks();
 
     exit( 0 ); /* We never get here, since we delete the init task */
@@ -139,30 +137,12 @@ rtems_task Init(rtems_task_argument arg)
 
 rtems_task display(rtems_task_argument arg)
 {
-    struct locator_spec* loc_spec = (struct locator_spec*)arg;
-    struct eCAP_data* ecap_data = loc_spec->ecap_data;
-    uint32_t num_intr = 0;
-    uint32_t intr_delta;
-    uint32_t time_value = 0;
-    uint32_t time_delta;
-    uint32_t calc_tps;
 
     printf("display starting...\n");
     while (1)
     {
-        /* sleep */
-        rtems_task_wake_after(rtems_clock_get_ticks_per_second());
-        intr_delta = ecap_data->num_intr - num_intr;
-        num_intr = ecap_data->num_intr;
-        time_delta = loc_spec->timeval - time_value;
-        time_value = loc_spec->timeval;
-        calc_tps = 100000000lu / (time_delta / intr_delta);
-
         /* print stuff */
         printf("\033[2J");
-        printf("intr_delta: %"PRIu32", calc_tps: %"PRIu32"\n", intr_delta, calc_tps);
-        printf("num_intr: %"PRIu32", ecap_data->num_intr: %"PRIu32"\n", num_intr, ecap_data->num_intr);
-        printf("timeval: %08"PRIx32", time_delta: %"PRIu32"\n", loc_spec->timeval, time_delta);
         rtems_cpu_usage_report();
         rtems_stack_checker_report_usage();
     }
