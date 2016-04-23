@@ -18,8 +18,8 @@
 #include "gpio.h"
 
 #include "debug.h"
-/* 
- * forward declarations 
+/*
+ * forward declarations
  */
 
 
@@ -71,8 +71,10 @@ void init_ecap(
     rtems_interrupt_level irqlvl;
     rtems_interrupt_disable(irqlvl);
 
-    mmio_write(SOC_CONTROL_REGS + CONTROL_CONF_PWMSS_CTRL,
-            (TBCLKEN_ENABLE << pwmss_tbclken_shift));
+    mmio_write(
+            SOC_CONTROL_REGS + CONTROL_CONF_PWMSS_CTRL,
+           (TBCLKEN_ENABLE << pwmss_tbclken_shift)
+              );
 
     /* Enable the eCAP module in CM_PER_EPWMSS0_CLKCTRL (8.1.12.1.36) */
     util_val = mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
@@ -83,12 +85,12 @@ void init_ecap(
     util_val = mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset);
     RTEMS_COMPILER_MEMORY_BARRIER();
 
-    /* Configure the eCAP module to 
-     *   trigger on rising pulses with no timer prescale
-     *   interrupt when the timer wraps
-     *   run in capture mode
-     *   wrap the timer
-     *   disable input and output synchronization
+    /* Configure the eCAP module to:
+     * - trigger on rising pulses with no timer prescale
+     * - interrupt when the timer wraps
+     * - run in capture mode
+     * - wrap the timer
+     * - disable input and output synchronization
      */
     ecap_regs->ECEINT = 0x0;
     RTEMS_COMPILER_MEMORY_BARRIER();
@@ -106,7 +108,7 @@ void init_ecap(
 
     /* Per the docs, clear all the interrupt flags and timer registers, and
      * then enable the interrupts (15.3.4.1.9) */
-    ecap_regs->ECCLR  = BIT(CTR_EQ_CMP) | BIT(CTR_EQ_PRD) | BIT(CTROVF) 
+    ecap_regs->ECCLR  = BIT(CTR_EQ_CMP) | BIT(CTR_EQ_PRD) | BIT(CTROVF)
                       | BIT(CEVT4) | BIT(CEVT3) | BIT(CEVT2) | BIT(CEVT1)
                       | BIT(INT);
     ecap_regs->ECEINT = BIT(CTROVF) | BIT(CEVT4) | BIT(CEVT3) | BIT(CEVT2) | BIT(CEVT1);
@@ -128,9 +130,9 @@ void init_ecap(
     RTEMS_COMPILER_MEMORY_BARRIER();
 
     util_val = pwmss_regs->CLKSTATUS;
-    if ( !(util_val & (1<<eCAP_CLK_EN_ACK)) ) 
-    { 
-        perror("Failed to start eCAP counter!\n"); 
+    if ( !(util_val & (1<<eCAP_CLK_EN_ACK)) )
+    {
+        perror("Failed to start eCAP counter!\n");
     }
 
     rtems_status_code have_isr = rtems_interrupt_handler_install(
@@ -145,7 +147,7 @@ void init_ecap(
     /* Re-enable interrupts, preserving cpsr */
     rtems_interrupt_enable(irqlvl);
 
-    /* Mux the ecap pin by setting the RXACTIVE bit and mode  
+    /* Mux the ecap pin by setting the RXACTIVE bit and mode
      * in pin register (9.3.1.51) to enable external eCAP
      * triggering
      */
@@ -153,3 +155,42 @@ void init_ecap(
 
 }
 
+uint32_t
+ecap_read_timer_value(
+        struct eCAP_data* ecap_data,
+        bool clear
+        )
+{
+
+    static uint32_t current_timer_reg;
+
+    /* We're going to naively assume we never miss an interrupt here, and
+     *  therefore never get more than one CEVTn flag at a time. If we do
+     *  miss an interrupt, this will explode horribly.
+     *
+     * For a proven strategy to handle missed interrupts, see erl_poc's
+     *  rotation-based lowest-energy strategy. */
+
+    /* get timer register value */
+    switch (ecap_data->int_flags & ((1<<CEVT1)|(1<<CEVT2)|(1<<CEVT3)|(1<<CEVT4)))
+    {
+        case (1<<CEVT1):
+            current_timer_reg = ecap_data->ecap_regs->CAP1;
+            break;
+        case (1<<CEVT2):
+            current_timer_reg = ecap_data->ecap_regs->CAP2;
+            break;
+        case (1<<CEVT3):
+            current_timer_reg = ecap_data->ecap_regs->CAP3;
+            break;
+        case (1<<CEVT4):
+            current_timer_reg = ecap_data->ecap_regs->CAP4;
+            break;
+        default:
+            printf("Missed an interrupt!\n");
+    }
+    if (clear)
+        ecap_data->ecap_regs->ECCLR = 0xFF;
+
+    return current_timer_reg;
+}

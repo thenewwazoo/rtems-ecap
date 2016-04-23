@@ -15,7 +15,6 @@
 #include "gpio.h"
 #include "locator.h"
 #include "system_clocks.h"
-#include "stimulator.h"
 
 #include "debug.h"
 
@@ -29,13 +28,7 @@ void start_tasks()
     struct eCAP_data* ecap0_data = (struct eCAP_data*)malloc(sizeof(struct eCAP_data));
     struct locator_spec* l1_spec = (struct locator_spec*)malloc(sizeof(struct locator_spec));
 
-    rtems_id strober_task_id;
-    uint8_t map[] = { 1, 1, 2 };
-    struct stim_spec* stim_data = (struct stim_spec*)malloc(sizeof(struct stim_spec));
-
-    rtems_id display_task_id;
-
-    rtems_status_code ret;
+    rtems_status_code ret; /* scratch space */
 
     /* create the tasks we'll later start */
     ret = rtems_task_create(
@@ -48,27 +41,6 @@ void start_tasks()
             );
     assert(ret == RTEMS_SUCCESSFUL);
 
-    ret = rtems_task_create(
-            rtems_build_name('S', 'T', 'R', 'B'),
-            2,
-            RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES,
-            &strober_task_id
-            );
-    assert(ret == RTEMS_SUCCESSFUL);
-
-    ret = rtems_task_create(
-            rtems_build_name('D', 'I', 'S', 'P'),
-            3,
-            RTEMS_MINIMUM_STACK_SIZE,
-            RTEMS_DEFAULT_MODES,
-            RTEMS_DEFAULT_ATTRIBUTES,
-            &display_task_id);
-    assert(ret == RTEMS_SUCCESSFUL);
-
-    /* start the tasks we've created */
-
     /***********************/
     /* ECAP0 consumer task */
     /***********************/
@@ -79,40 +51,6 @@ void start_tasks()
     ret = rtems_task_start(
             locator_task_id,
             locator_task,
-            (rtems_task_argument)l1_spec);
-    assert(ret == RTEMS_SUCCESSFUL);
-
-    /***************************/
-    /* ECAP0 pin strobing task */
-    /***************************/
-
-    gpio_init();
-
-    stim_data->module = (gpio_module)1;
-    stim_data->pin = (gpio_pin)17;
-    stim_data->interval = rtems_clock_get_ticks_per_second() / 60;
-    stim_data->num_teeth = 1;
-    stim_data->map = map;
-
-    /* Configure gpio1_17, which lives on control_conf_gpmc_a1 */
-    mux_pin(CONTROL_CONF_GPMC_A1_OFFSET, CONTROL_CONF_MUXMODE(7));
-
-    /* set gpio1_17 to be an output */
-    gpio_setdirection(stim_data->module, stim_data->pin, false);
-
-    ret = rtems_task_start(
-            strober_task_id,
-            stimulator,
-            (rtems_task_argument)stim_data);
-    assert(ret == RTEMS_SUCCESSFUL);
-
-    /****************/
-    /* Display task */
-    /****************/
-
-    ret = rtems_task_start(
-            display_task_id,
-            display,
             (rtems_task_argument)l1_spec);
     assert(ret == RTEMS_SUCCESSFUL);
 
@@ -135,18 +73,6 @@ rtems_task Init(rtems_task_argument arg)
     exit( 0 ); /* We never get here, since we delete the init task */
 }
 
-rtems_task display(rtems_task_argument arg)
-{
-
-    printf("display starting...\n");
-    while (1)
-    {
-        /* print stuff */
-        printf("\033[2J");
-        rtems_cpu_usage_report();
-        rtems_stack_checker_report_usage();
-    }
-}
 
 #define CONFIGURE_MICROSECONDS_PER_TICK 1000
 #define CONFIGURE_STACK_CHECKER_ENABLED

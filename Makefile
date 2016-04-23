@@ -12,8 +12,7 @@ CSRCS = main.c \
 	gpio.c \
 	system_clocks.c \
 	locator.c \
-	stimulator.c \
-        detector.c
+    detector.c
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
 
 CFLAGS_OPTIMIZE_V = -g -O3
