@@ -11,3 +11,8 @@ struct eCAP_data {
 void init_ecap(
         rtems_interrupt_handler handler,
         struct eCAP_data* arg);
+
+uint32_t ecap_read_timer_value(
+        struct eCAP_data* ecap_data,
+        bool clear
+        );
