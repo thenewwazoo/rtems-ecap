@@ -11,8 +11,8 @@
 #include "locator.h"
 #include "events.h"
 
-#include "../markov-localizer/c99_fp/detector.h"
-#include "../markov-localizer/c99_fp/test_data.h"
+#include "markov-localizer/c99_fp/detector.h"
+#include "markov-localizer/c99_fp/test_data.h"
 
 
 static void ecap_handler(void* arg);

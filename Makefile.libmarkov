@@ -1,0 +1,28 @@
+# This is a supplemental Makefile for the markov localization library.
+
+LIBNAME=libmarkov.a        # xxx- your library names goes here
+LIB=${ARCH}/${LIBNAME}
+
+# C and C++ source names, if any, go here -- minus the .c or .cc
+C_PIECES=detector debug_print test_data
+C_FILES=$(C_PIECES:%=%.c)
+C_O_FILES=$(C_PIECES:%=${ARCH}/%.o)
+
+SRCS=$(C_FILES)
+OBJS=$(C_O_FILES)
+
+include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
+
+include $(RTEMS_CUSTOM)
+include $(RTEMS_ROOT)/share/rtems4.11/make/lib.cfg
+
+DEFINES  +=
+CFLAGS   += -std=c99
+
+#CLEAN_ADDITIONS += xxx-your-debris-goes-here
+#CLOBBER_ADDITIONS +=
+
+all:	${ARCH} $(SRCS) $(LIB)
+
+$(LIB): ${OBJS}
+	$(make-library)
