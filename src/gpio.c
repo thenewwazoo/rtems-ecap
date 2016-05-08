@@ -64,7 +64,7 @@ void init_gpio_per(
     while ((mmio_read(CM_PER_MMIO_BASE + cm_per_clk_reg_offset)
                 & (0x3 << IDLEST))
             != (IDLEST_FUNC << IDLEST));
-    
+
     while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKSTCTRL_OFFSET)
                 & (CLKACTIVITY_ACT << CLKACTIVITY_GPIO_1_GDBCLK))
             != (CLKACTIVITY_ACT << CLKACTIVITY_GPIO_1_GDBCLK));
@@ -90,10 +90,10 @@ void init_gpio_per(
     print_gpio(gpio_regs);
 }
 
-/** Mux a pin with a specific setup necessary for GPIO use. 
+/** Mux a pin with a specific setup necessary for GPIO use.
  *
  * Unfortunately, this requires foreknowledge of which register you need
- * to twiddle. You can find how to do this in the "Need to find the 
+ * to twiddle. You can find how to do this in the "Need to find the
  * control register offset" note in bbb_mmap.h
  */
 void gpio_pin_setup(uint32_t soc_control_conf_reg_offset)
@@ -101,8 +101,10 @@ void gpio_pin_setup(uint32_t soc_control_conf_reg_offset)
     mmio_write(SOC_CONTROL_REGS + soc_control_conf_reg_offset,
             (SLEWCTRL_SLOW << CONTROL_CONF_SLEWCTRL) |
             (RXACTIVE_EN << CONTROL_CONF_RXACTIVE) |
+            /*
             (PUTYPESEL_PULLDOWN << CONTROL_CONF_PUTYPESEL) |
             (PUDEN_EN << CONTROL_CONF_PUDEN) |
+            */
             CONTROL_CONF_MUXMODE(7));
 }
 
@@ -110,9 +112,25 @@ void mux_pin(
         uint32_t soc_control_conf_reg_offset,
         uint8_t mux_mode)
 {
-    mmio_write(SOC_CONTROL_REGS + soc_control_conf_reg_offset, 
+    mmio_write(SOC_CONTROL_REGS + soc_control_conf_reg_offset,
             (RXACTIVE_EN << CONTROL_CONF_RXACTIVE) | CONTROL_CONF_MUXMODE(mux_mode)
            );
+}
+
+void setup_pin(
+        uint32_t soc_control_conf_reg_offset,
+        uint8_t slewctrl,
+        uint8_t rxactive,
+        uint8_t putypesel,
+        uint8_t puden,
+        uint8_t mux_mode)
+{
+    mmio_write(SOC_CONTROL_REGS + soc_control_conf_reg_offset,
+            (slewctrl << CONTROL_CONF_SLEWCTRL) |
+            (rxactive << CONTROL_CONF_RXACTIVE) |
+            (putypesel << CONTROL_CONF_PUTYPESEL) |
+            (puden << CONTROL_CONF_PUDEN) |
+            CONTROL_CONF_MUXMODE(mux_mode));
 }
 
 inline struct GPIO_regs* gpio_get_regs(gpio_module module)

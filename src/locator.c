@@ -5,8 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "hw/bbb_mmap.h"
 #include "hw/ecap_defn.h"
+#include "hw/gpio_defn.h"
 
+#include "gpio.h"
 #include "ecap.h"
 #include "locator.h"
 #include "events.h"
@@ -54,6 +57,14 @@ rtems_task locator_task(rtems_task_argument arg)
     /* start the ecap0 module and register the interrupt handler        */
     /* this function populates ecap_data->ecap_regs and ->ecap_event_id */
     init_ecap(ecap_handler, ecap_data);
+
+    setup_pin( /* mcasp0_aclkr shares P9_42 with ecap0 */
+            CONTROL_CONF_MCASP0_ACLKR,
+            0, /*ignored*/
+            RXACTIVE_EN, /* set to input (high-z) mode */
+            0, /*ignored*/
+            PUDEN_DIS, /* disable pullup/down */
+            0  /*ignored*/);
 
     printf("Locator task listening for events...\n");
     while (1)

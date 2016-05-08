@@ -151,8 +151,14 @@ void init_ecap(
      * in pin register (9.3.1.51) to enable external eCAP
      * triggering
      */
-    mux_pin(ecap_pin_reg_offset, ecap_pin_mux_mode);
-
+    setup_pin( /* set up the ecap pin */
+            ecap_pin_reg_offset,
+            SLEWCTRL_FAST,
+            RXACTIVE_DIS,
+            0, /*ignored*/
+            PUDEN_DIS, /* please use external pullup/down */
+            ecap_pin_mux_mode
+            );
 }
 
 uint32_t

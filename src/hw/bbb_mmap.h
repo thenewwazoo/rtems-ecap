@@ -11,6 +11,7 @@
 #define SOC_CONTROL_REGS                        (0x44E10000)
 #define CONTROL_IOPAD_OFFSET                    (0x800)
 #define CONTROL_CONF_GPMC_A1_OFFSET             (0x844)
+#define CONTROL_CONF_MCASP0_ACLKR               (0x9A0)
 #define CONTROL_CONF_ECAP0_IN_PWM0_OUT_OFFSET   (0x964)
 #define CONTROL_CONF_PWMSS_CTRL                 (0x664)
 #define CONTROL_CONF_ECAP_EVT_CAP               (0xFD4)
@@ -32,8 +33,8 @@
 #define PUTYPESEL_PULLUP    1
 
 /* RXACTIVE values */
-#define RXACTIVE_DIS    0
-#define RXACTIVE_EN     1
+#define RXACTIVE_EN     0
+#define RXACTIVE_DIS    1
 
 /* SLEWCTRL values */
 #define SLEWCTRL_FAST   0
