@@ -137,7 +137,7 @@ void gpio_print_debug(gpio_module module)
 }
 
 void gpio_setdirection(
-        gpio_module module, 
+        gpio_module module,
         gpio_pin pin,
         bool is_input)
 {

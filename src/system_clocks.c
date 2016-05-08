@@ -34,27 +34,27 @@ void clocks_init_L3()
             CLKTRCTRL_SW_WKUP << CLKTRCTRL);
 
     /* Now we wait for some proof that the clocks have started */
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3_CLKCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3_CLKCTRL_OFFSET)
                 & (0x3 << IDLEST))
             != (IDLEST_FUNC << IDLEST));
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3_INSTR_CLKCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3_INSTR_CLKCTRL_OFFSET)
                 & (0x3 << IDLEST))
             != (IDLEST_FUNC << IDLEST));
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3_CLKSTCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3_CLKSTCTRL_OFFSET)
                 & (CLKACTIVITY_ACT << CLKACTIVITY_L3_GCLK))
             != (CLKACTIVITY_ACT << CLKACTIVITY_L3_GCLK));
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_OCPWP_CLKCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_OCPWP_CLKCTRL_OFFSET)
                 & (0x3 << IDLEST))
             != (IDLEST_FUNC << IDLEST));
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_OCPWP_L3_CLKSTCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_OCPWP_L3_CLKSTCTRL_OFFSET)
                 & (CLKACTIVITY_ACT << CLKACTIVITY_OCPWP_L3_GCLK))
             != (CLKACTIVITY_ACT << CLKACTIVITY_OCPWP_L3_GCLK));
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3S_CLKSTCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L3S_CLKSTCTRL_OFFSET)
                 & (CLKACTIVITY_ACT << CLKACTIVITY_L3S_GCLK))
             != (CLKACTIVITY_ACT << CLKACTIVITY_L3S_GCLK));
 }
@@ -70,11 +70,11 @@ void clocks_init_L4()
     set_bit_and_wait((void*)(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKSTCTRL_OFFSET),
             CLKTRCTRL_SW_WKUP << CLKTRCTRL);
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKCTRL_OFFSET)
                 & (0x3 << IDLEST))
             != (IDLEST_FUNC << IDLEST));
 
-    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKSTCTRL_OFFSET) 
+    while ((mmio_read(CM_PER_MMIO_BASE + CM_PER_L4LS_CLKSTCTRL_OFFSET)
                 & (CLKACTIVITY_ACT << CLKACTIVITY_L4LS_GCLK))
             != (CLKACTIVITY_ACT << CLKACTIVITY_L4LS_GCLK));
 }

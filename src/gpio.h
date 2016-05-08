@@ -9,7 +9,7 @@ void mux_pin(
 void gpio_init();
 void gpio_pin_setup(uint32_t soc_control_conf_reg_offset);
 void gpio_setdirection(
-        gpio_module module, 
+        gpio_module module,
         gpio_pin pin,
         bool is_input);
 void gpio_out(gpio_module module, gpio_pin pin, bool value);

@@ -15,13 +15,13 @@
 void print_ecap(struct eCAP_data* ecap_data)
 {
     printk("ECAP0 register values ={\n"
-    "\tTSCTR:\t0x%08"PRIx32     "\tCTRPHS:\t0x%08"PRIx32"\n" 
+    "\tTSCTR:\t0x%08"PRIx32     "\tCTRPHS:\t0x%08"PRIx32"\n"
     "\tCAP1:\t0x%08"PRIx32      "\tCAP2:\t0x%08"PRIx32       "\tCAP3:\t0x%08"PRIx32       "\tCAP4:\t0x%08"PRIx32"\n"
     "\tECCTL1:\t0x%04"PRIx16    "\tECCTL2:\t0x%04"PRIx16     "\tECEINT:\t0x%04"PRIx16"\n"
     "\tECFLG:\t0x%04"PRIx16     "\tECCLR:\t0x%04"PRIx16      "\tECFRC:\t0x%04"PRIx16"\n"
     "\tREVID:\t0x%08"PRIx32"\n"
     "}\n",
-    ecap_data->ecap_regs->TSCTR,  ecap_data->ecap_regs->CTRPHS, 
+    ecap_data->ecap_regs->TSCTR,  ecap_data->ecap_regs->CTRPHS,
     ecap_data->ecap_regs->CAP1,   ecap_data->ecap_regs->CAP2,   ecap_data->ecap_regs->CAP3,   ecap_data->ecap_regs->CAP4,
     ecap_data->ecap_regs->ECCTL1, ecap_data->ecap_regs->ECCTL2, ecap_data->ecap_regs->ECEINT,
     ecap_data->ecap_regs->ECFLG,  ecap_data->ecap_regs->ECCLR,  ecap_data->ecap_regs->ECFRC,
