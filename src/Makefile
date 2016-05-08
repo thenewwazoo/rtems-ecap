@@ -15,7 +15,8 @@ CSRCS = main.c \
 COBJS = $(CSRCS:%.c=${ARCH}/%.o)
 
 XCPPFLAGS += -I../lib/
-CFLAGS_OPTIMIZE_V = -g -O3
+CFLAGS_OPTIMIZE_V += -g -O3
+CFLAGS_OPTIMIZE_V += -mthumb -march=armv7-a -mfpu=neon -mfloat-abi=hard -mtune=cortex-a8
 
 include $(RTEMS_MAKEFILE_PATH)/Makefile.inc
 include $(RTEMS_CUSTOM)
