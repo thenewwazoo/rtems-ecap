@@ -87,7 +87,7 @@ rtems_task locator_task(rtems_task_argument arg)
                 d.velocity,
                 d.last_acceleration,
                 d.confidence,
-                d.tooth_posn
+                d.current_tooth
               );
     }
 
