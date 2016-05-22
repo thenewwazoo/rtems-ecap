@@ -81,6 +81,14 @@ rtems_task locator_task(rtems_task_argument arg)
             printf("+");
         else
             printf(".");
+        printf(
+                " t=%d v=%.2f a=%.2f c=%.2f p=%d\n",
+                d->previous_timer,
+                d->velocity,
+                d->last_acceleration,
+                d->confidence,
+                d->tooth_posn
+              );
     }
 
 }
